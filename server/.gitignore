@@ -1,0 +1,104 @@
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux
+*~
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+dist/
+.build/
+.next/
+out/
+coverage/
+.cache/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+venv/
+env/
+.venv/
+pip-wheel-metadata/
+*.egg-info/
+wheelhouse/
+
+# .NET / Visual Studio
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+
+# IDEs/editors
+.vscode/
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+secrets.yml
+credentials/
+*.pem
+*.key
+
+# Logs and runtime files
+logs/
+*.log
+*.pid
+*.seed
+*.pid.lock
+tmp/
+temp/
+
+# Databases
+*.sqlite3
+*.db
+*.db-journal
+
+# Build / compiled files
+build/
+tmp_build/
+dist/
+out/
+*.class
+*.jar
+*.war
+*.ear
+*.exe
+*.dll
+*.so
+*.o
+*.obj
+
+# Archives
+*.zip
+*.tar.gz
+*.rar
+
+# Misc
+coverage/
+coverage.xml
+*.bak
+*.orig
+.idea_modules/
