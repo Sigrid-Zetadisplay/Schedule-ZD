@@ -16,6 +16,8 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use('/api', require('./routes/orders'));
+app.use('/api', require('./routes/tasks'));
+
 
 
 // MongoDB connect - use MONGODB_URI from .env

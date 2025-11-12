@@ -1,0 +1,29 @@
+/* --- App shell --- */
+.app-shell {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+/* Main content column container (centered, with a max width) */
+.main-inner {
+  /* tweak this to make the whole app wider/narrower */
+  max-width: 1400px; /* try 1600px if you want even wider */
+  margin: 0 auto;
+  padding: 1rem 1.5rem;
+}
+
+/* Full-bleed section (spans full viewport width, ignoring main-inner max-width) */
+.full-bleed {
+  position: relative;
+  left: 50%;
+  right: 50%;
+  margin-left: -50vw;
+  margin-right: -50vw;
+  width: 100vw;
+  background: #fff;
+  padding: 1rem 2rem;
+  box-sizing: border-box;
+}
+
+/* Optional: make the calendar taller on small screens */

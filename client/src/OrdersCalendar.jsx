@@ -1,80 +1,80 @@
+// client/src/OrdersCalendar.jsx
 import React, { useEffect, useState } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import { fetchOrders } from './api';
+import { getOrders } from './api';
 
-export default function OrdersCalendar() {
+export default function OrdersCalendar({
+  // filters
+  bucket,        // 'current' | 'upcoming' | 'recent' | 'expired' | undefined
+  client,
+  source,        // 'manual' | 'jotform' | 'flytoget' | undefined
+  from,          // ISO string
+  to,            // ISO string
+  q,
+
+  // ui
+  initialView = 'dayGridMonth',
+  height = '70vh',
+  showToolbar = true,
+}) {
   const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [err, setErr] = useState('');
 
   useEffect(() => {
-    let isMounted = true;
-
-    async function load() {
+    let active = true;
+    (async () => {
       try {
-        setLoading(true);
-        const orders = await fetchOrders();
+        setErr('');
+        const params = { limit: 1000 };
+        if (bucket) params.bucket = bucket;
+        if (client) params.client = client;
+        if (source) params.source = source;
+        if (from) params.from = from;
+        if (to) params.to = to;
+        if (q) params.q = q;
 
-        if (!isMounted) return;
+        const rows = await getOrders(params);
+        if (!active) return;
 
-        const mapped = orders.map((o) => ({
-          id: o._id,
-          title: buildTitle(o),
-          start: o.start,
-          end: o.end,
-          allDay: !!o.allDay,
-          extendedProps: {
-            client: o.client,
-            sov: o.sov,
-            notes: o.notes,
-          },
-        }));
-
-        setEvents(mapped);
-      } catch (err) {
-        console.error(err);
-        if (isMounted) setError('Could not load orders from API');
-      } finally {
-        if (isMounted) setLoading(false);
+        setEvents(
+          rows.map((o) => ({
+            id: o._id,
+            title: (o.title || 'Campaign') + (o.sov != null ? ` (${o.sov} SOV)` : ''),
+            allDay: !!o.allDay,
+            start: o.start,
+            end: o.end,
+            extendedProps: {
+              client: o.client,
+              sov: o.sov,
+              notes: o.notes,
+              source: o.source,
+            },
+          }))
+        );
+      } catch (e) {
+        if (active) setErr('Failed to load events');
+        console.error(e);
       }
-    }
-
-    load();
-
+    })();
     return () => {
-      isMounted = false;
+      active = false;
     };
-  }, []);
+  }, [bucket, client, source, from, to, q]);
 
-  function buildTitle(o) {
-    const base = o.title || 'Campaign';
-    if (o.sov != null && o.sov !== '') {
-      return `${base} (${o.sov} SOV)`;
-    }
-    return base;
-  }
-
-  function handleEventClick(info) {
+  function onEventClick(info) {
     const { title, extendedProps, start, end } = info.event;
-    const { client, sov, notes } = extendedProps;
-
-    const startStr = start
-      ? start.toLocaleString()
-      : '';
-    const endStr = end
-      ? end.toLocaleString()
-      : '';
-
+    const { client, sov, notes, source } = extendedProps;
     alert(
       [
         title,
         client ? `Client: ${client}` : null,
+        source ? `Source: ${source}` : null,
         sov != null ? `SOV: ${sov}` : null,
-        startStr ? `Start: ${startStr}` : null,
-        endStr ? `End: ${endStr}` : null,
+        start ? `Start: ${start.toLocaleString()}` : null,
+        end ? `End: ${end.toLocaleString()}` : null,
         notes ? `Notes: ${notes}` : null,
       ]
         .filter(Boolean)
@@ -83,23 +83,19 @@ export default function OrdersCalendar() {
   }
 
   return (
-    <div style={{ padding: '1.5rem' }}>
-      <h1 style={{ marginBottom: '1rem' }}>Schedule Overview</h1>
-
-      {loading && <p>Loading orders…</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-
+    <div>
+      {err && <p style={{ color: 'red' }}>{err}</p>}
       <FullCalendar
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-        initialView="dayGridMonth"
-        headerToolbar={{
-          left: 'prev,next today',
-          center: 'title',
-          right: 'dayGridMonth,timeGridWeek,timeGridDay',
-        }}
+        initialView={initialView}
+        headerToolbar={
+          showToolbar
+            ? { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' }
+            : false
+        }
+        height={height}
         events={events}
-        eventClick={handleEventClick}
-        height="80vh"
+        eventClick={onEventClick}
       />
     </div>
   );
