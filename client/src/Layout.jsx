@@ -5,32 +5,66 @@ import DashboardPage from './pages/DashboardPage';
 import OrdersPage from './pages/OrdersPage';
 import TasksPage from './pages/TasksPage';
 import CalendarPage from './pages/CalendarPage';
+import { useCustomer, CUSTOMER_THEMES } from './context/CustomerContext';
 
 export default function Layout() {
+  const { theme, customerKey, customerLabel, setCustomerKey } = useCustomer();
+
   return (
-    <div className="min-h-screen grid grid-cols-[220px_1fr] bg-slate-50">
+    <div
+      className="min-h-screen grid grid-cols-[220px_1fr]"
+      style={{ backgroundColor: theme.background }}
+    >
       {/* Sidebar */}
-      <aside className="border-r border-gray-200 bg-white flex flex-col">
-        <div className="px-4 py-4 border-b border-gray-100">
-          <h2 className="text-xl font-semibold text-gray-800">
+      <aside
+        className="border-r border-gray-200 flex flex-col"
+        style={{ backgroundColor: theme.primary, color: '#fff' }}
+      >
+        <div className="px-4 py-4 border-b border-white/20">
+          <h2 className="text-xl font-semibold text-white">
             Schedule App
           </h2>
-          <p className="text-xs text-gray-500 mt-1">
-            Flytoget campaigns & tasks
+          <p className="text-xs text-white/80 mt-1">
+            Active customer: {customerLabel}
           </p>
         </div>
 
-        <nav className="flex-1 px-3 py-4 space-y-1 text-sm">
+        {/* Customer selector in sidebar */}
+        <div className="px-3 pt-3 pb-2 text-[11px]">
+          <div className="mb-1 font-semibold text-white/80">Customers</div>
+          <div className="space-y-1">
+            {Object.values(CUSTOMER_THEMES).map((c) => {
+              const active = c.key === customerKey;
+              return (
+                <button
+                  key={c.key}
+                  type="button"
+                  onClick={() => setCustomerKey(c.key)}
+                  className={
+                    'w-full text-left rounded-md px-2 py-1 text-xs transition ' +
+                    (active
+                      ? 'bg-white/80 text-slate-900 font-semibold'
+                      : 'bg-white/10 text-white hover:bg-white/20')
+                  }
+                >
+                  {c.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <nav className="flex-1 px-3 py-2 space-y-1 text-sm">
           <NavItem to="/dashboard" label="Dashboard" />
           <NavItem to="/orders" label="Orders" />
           <NavItem to="/tasks" label="Tasks" />
           <NavItem to="/calendar" label="Calendar" />
         </nav>
 
-        <div className="px-4 py-3 border-t border-gray-100 text-[11px] text-gray-400">
+        <div className="px-4 py-3 border-t border-white/15 text-[11px] text-white/80">
           <div>Logged in as: you</div>
           <div className="mt-1">
-            <span className="inline-block rounded-full bg-blue-50 px-2 py-0.5 text-[11px] text-blue-700 border border-blue-100">
+            <span className="inline-block rounded-full bg-white/20 px-2 py-0.5 text-[11px] border border-white/30">
               Internal tool
             </span>
           </div>
@@ -61,8 +95,8 @@ function NavItem({ to, label }) {
           'flex items-center rounded-md px-3 py-2 transition-colors',
           'text-sm',
           isActive
-            ? 'bg-blue-600 text-white font-medium shadow-sm'
-            : 'text-gray-700 hover:bg-blue-50 hover:text-blue-700',
+            ? 'bg-white text-slate-900 font-medium shadow-sm'
+            : 'text-white/90 hover:bg-white/10 hover:text-white',
         ].join(' ')
       }
     >
