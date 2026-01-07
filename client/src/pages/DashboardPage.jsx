@@ -1,255 +1,128 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getSummary, getOrders, getTasks } from "../api";
-import OrdersCalendar from "../OrdersCalendar";
-import { useCustomer, CUSTOMER_THEMES } from "../context/CustomerContext";
+import { useParams } from "react-router-dom";
+import { getOrders, getTasks } from "../api";
 
-const SECTIONS = [
-  { key: "orders", label: "Orders" },
-  { key: "tasks", label: "Tasks" },
-  { key: "calendar", label: "Calendar" },
-  { key: "info", label: "Info" },
-];
+import { CUSTOMER_THEMES } from "../context/CustomerContext";
 
 export default function DashboardPage() {
-  const { theme, customerLabel, customerKey, setCustomerKey } = useCustomer();
-  const [activeSection, setActiveSection] = React.useState("orders");
+  const { customerKey } = useParams();
 
-  const { data: summary } = useQuery({
-    queryKey: ["summary"],
-    queryFn: getSummary,
-  });
+  const customer = CUSTOMER_THEMES[customerKey] || CUSTOMER_THEMES.flytoget;
+  const theme = customer;
+
+  // Current campaigns
   const { data: current } = useQuery({
-    queryKey: ["orders", "current"],
-    queryFn: () => getOrders({ bucket: "current", limit: 50 }),
+    queryKey: ["orders", customerKey, "current"],
+    queryFn: () => getOrders({ bucket: "current", customerKey, limit: 50 }),
   });
+
+  // Recently expired (we'll filter to last 5 days)
   const { data: recent } = useQuery({
-    queryKey: ["orders", "recent"],
-    queryFn: () => getOrders({ bucket: "recent", limit: 20 }),
-  });
-  const { data: dueSoon } = useQuery({
-    queryKey: ["tasks", "due"],
-    queryFn: () => getTasks({ status: "open", limit: 50 }),
+    queryKey: ["orders", customerKey, "recent"],
+    queryFn: () => getOrders({ bucket: "recent", customerKey, limit: 100 }),
   });
 
-  // Filter orders/tasks by active customer label if they have a .client field
-  const currentForCustomer = React.useMemo(() => {
-    if (!current) return current;
-    return current.filter((o) => !o.client || o.client === customerLabel);
-  }, [current, customerLabel]);
+  // Open tasks
+  const { data: openTasks } = useQuery({
+    queryKey: ["tasks", customerKey, "open"],
+    queryFn: () => getTasks({ status: "open", customerKey, limit: 50 }),
+  });
 
-  const recentForCustomer = React.useMemo(() => {
+  const recentLast5Days = React.useMemo(() => {
     if (!recent) return recent;
-    return recent.filter((o) => !o.client || o.client === customerLabel);
-  }, [recent, customerLabel]);
 
-  const tasksForCustomer = React.useMemo(() => {
-    if (!dueSoon) return dueSoon;
-    const anyHasClient = dueSoon.some((t) => t.client);
-    if (!anyHasClient) return dueSoon;
-    return dueSoon.filter((t) => !t.client || t.client === customerLabel);
-  }, [dueSoon, customerLabel]);
+    const now = Date.now();
+    const fiveDaysMs = 5 * 24 * 60 * 60 * 1000;
+
+    return recent
+      .filter((o) => {
+        // Prefer an explicit field if you have it (e.g. o.end / o.endsAt)
+        const dateStr = o.end || o.endsAt || o.updatedAt || o.createdAt;
+        if (!dateStr) return false;
+
+        const t = new Date(dateStr).getTime();
+        if (Number.isNaN(t)) return false;
+
+        return now - t <= fiveDaysMs;
+      })
+      .slice(0, 20); // keep list tidy
+  }, [recent]);
 
   return (
     <div>
       <header style={{ marginBottom: "1rem" }}>
         <h1 style={{ margin: 0, color: theme.primary }}>Dashboard</h1>
         <p style={{ margin: "0.25rem 0", color: theme.muted }}>
-          Customer overview – {customerLabel}
+          {customer.label}
         </p>
       </header>
 
-      {/* Customer selector (duplicate of sidebar, but visible here too) */}
       <div
         style={{
-          display: "flex",
-          gap: "0.75rem",
-          marginBottom: "1rem",
-          flexWrap: "wrap",
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "2rem",
+          alignItems: "start",
         }}
       >
-        {Object.values(CUSTOMER_THEMES).map((c) => {
-          const isActive = c.key === customerKey;
-          return (
-            <button
-              key={c.key}
-              type="button"
-              onClick={() => setCustomerKey(c.key)}
-              style={{
-                padding: "0.4rem 1rem",
-                borderRadius: 999,
-                border: isActive ? `2px solid ${c.primary}` : "1px solid #ddd",
-                background: isActive ? c.primary : "#ffffff",
-                color: isActive ? "#ffffff" : "#333333",
-                fontWeight: 600,
-                cursor: "pointer",
-                fontSize: 14,
-              }}
-            >
-              {c.label}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Section selector */}
-      <div
-        style={{
-          display: "flex",
-          gap: "0.5rem",
-          marginBottom: "1.5rem",
-          flexWrap: "wrap",
-        }}
-      >
-        {SECTIONS.map((section) => {
-          const isActive = section.key === activeSection;
-          return (
-            <button
-              key={section.key}
-              type="button"
-              onClick={() => setActiveSection(section.key)}
-              style={{
-                padding: "0.4rem 0.9rem",
-                borderRadius: 999,
-                border: isActive
-                  ? `2px solid ${theme.primary}`
-                  : `1px solid ${theme.border}`,
-                background: isActive ? theme.primary : theme.cardBg,
-                color: isActive ? "#ffffff" : "#333333",
-                fontSize: 13,
-                fontWeight: 500,
-                cursor: "pointer",
-              }}
-            >
-              {section.label}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* INFO SECTION */}
-      {activeSection === "info" && (
-        <>
-          <section
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(4,1fr)",
-              gap: "1rem",
-              margin: "1rem 0",
-            }}
-          >
-            <Card title="Upcoming" theme={theme}>
-              {summary?.upcoming ?? "—"}
-            </Card>
-            <Card title="Current" theme={theme}>
-              {summary?.current ?? "—"}
-            </Card>
-            <Card title="Recently Expired (30d)" theme={theme}>
-              {summary?.expiredRecent ?? "—"}
-            </Card>
-            <Card title="Current SOV Total" theme={theme}>
-              {summary?.sovCurrent ?? 0}
-            </Card>
-          </section>
-        </>
-      )}
-
-      {/* ORDERS SECTION */}
-      {activeSection === "orders" && (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: "2rem",
-          }}
-        >
+        {/* Full-width tasks row */}
+        <div style={{ gridColumn: "1 / -1" }}>
           <Panel title="Current Campaigns" theme={theme}>
             <List
-              items={currentForCustomer}
+              items={current}
               render={(o) => (
                 <li key={o._id}>
-                  <strong>{o.title}</strong>{" "}
-                  <span style={{ color: theme.muted }}>
-                    — {o.client} ({o.sov} SOV)
-                  </span>
-                </li>
-              )}
-            />
-          </Panel>
-
-          <Panel title="Recently Expired (last 30d)" theme={theme}>
-            <List
-              items={recentForCustomer}
-              render={(o) => (
-                <li key={o._id}>
-                  <strong>{o.title}</strong>{" "}
-                  <span style={{ color: theme.muted }}>— {o.client}</span>
-                </li>
-              )}
-            />
-          </Panel>
-        </div>
-      )}
-
-      {/* TASKS SECTION */}
-      {activeSection === "tasks" && (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr",
-            gap: "2rem",
-          }}
-        >
-          <Panel title="Open Tasks" theme={theme}>
-            <List
-              items={tasksForCustomer}
-              render={(t) => (
-                <li key={t._id}>
-                  <strong>{t.title}</strong>{" "}
-                  {t.client && (
-                    <span style={{ color: theme.muted }}>({t.client}) </span>
+                  <strong>{o.title || "Campaign"}</strong>{" "}
+                  {o.sov != null && (
+                    <span style={{ color: theme.muted }}>({o.sov} SOV)</span>
                   )}
-                  {t.due
-                    ? "— due " +
-                      new Date(t.due).toLocaleDateString()
-                    : ""}
+                  {o.start && (
+                    <div style={{ fontSize: 12, color: theme.muted }}>
+                      {fmtDate(o.start)} → {o.end ? fmtDate(o.end) : "—"}
+                    </div>
+                  )}
                 </li>
               )}
             />
           </Panel>
         </div>
-      )}
 
-      {/* CALENDAR SECTION */}
-      {activeSection === "calendar" && (
-        <div style={{ marginTop: "2rem" }}>
-          <h3>Calendar</h3>
-          <div className="dashboard-calendar">
-            <OrdersCalendar
-              initialView="timeGridWeek"
-              height="60vh"
-              bucket="current"
-              client={customerLabel} // filter by active customer
-            />
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+        <Panel title="Open Tasks" theme={theme}>
+          <List
+            items={openTasks}
+            render={(t) => (
+              <li key={t._id}>
+                <strong>{t.title}</strong>{" "}
+                {t.due ? (
+                  <span style={{ color: theme.muted }}>
+                    — due {fmtDate(t.due)}
+                  </span>
+                ) : (
+                  <span style={{ color: theme.muted }}>— no due date</span>
+                )}
+              </li>
+            )}
+          />
+        </Panel>
 
-function Card({ title, children, theme }) {
-  return (
-    <div
-      style={{
-        padding: "1rem",
-        border: "1px solid #eee",
-        borderRadius: 8,
-        background: theme.cardBg,
-      }}
-    >
-      <div style={{ fontSize: 12, color: theme.muted }}>{title}</div>
-      <div style={{ fontSize: 24, fontWeight: 600 }}>{children}</div>
+        <Panel title="Recently Expired (last 5 days)" theme={theme}>
+          <List
+            items={recentLast5Days}
+            render={(o) => (
+              <li key={o._id}>
+                <strong>{o.title || "Campaign"}</strong>
+                {(o.end || o.endsAt) && (
+                  <span style={{ color: theme.muted }}>
+                    {" "}
+                    — ended {fmtDate(o.end || o.endsAt)}
+                  </span>
+                )}
+              </li>
+            )}
+          />
+        </Panel>
+      </div>
     </div>
   );
 }
@@ -257,7 +130,7 @@ function Card({ title, children, theme }) {
 function Panel({ title, children, theme }) {
   return (
     <div>
-      <h3 style={{ color: theme.primary }}>{title}</h3>
+      <h3 style={{ color: theme.primary, marginTop: 0 }}>{title}</h3>
       <div
         style={{
           border: "1px solid #eee",
@@ -278,4 +151,12 @@ function List({ items, render }) {
   return (
     <ul style={{ margin: 0, paddingLeft: "1rem" }}>{items.map(render)}</ul>
   );
+}
+
+function fmtDate(d) {
+  try {
+    return new Date(d).toLocaleDateString();
+  } catch {
+    return "";
+  }
 }

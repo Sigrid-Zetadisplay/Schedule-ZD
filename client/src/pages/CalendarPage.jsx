@@ -1,64 +1,111 @@
 // client/src/pages/CalendarPage.jsx
-import React, { useState } from 'react';
-import OrdersCalendar from '../OrdersCalendar';
+import React, { useEffect, useState } from 'react';
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import interactionPlugin from '@fullcalendar/interaction';
+import { getOrders } from '../api';
 
-export default function CalendarPage() {
-  const [bucket, setBucket] = useState('current'); // current | upcoming | recent | expired | (empty for all)
-  const [source, setSource] = useState('');        // manual | jotform | flytoget | ''
-  const [client, setClient] = useState('');
-  const [q, setQ] = useState('');
+export default function CalendarPage({
+  // filters
+  bucket,
+  client,
+  source,
+  from,
+  to,
+  q,
+
+  // ui
+  initialView = 'dayGridMonth',
+  height = '70vh',
+  showToolbar = true,
+}) {
+  const [events, setEvents] = useState([]);
+  const [err, setErr] = useState('');
+
+  useEffect(() => {
+    let active = true;
+
+    (async () => {
+      try {
+        setErr('');
+        const params = { limit: 1000 };
+        if (bucket) params.bucket = bucket;
+        if (client) params.client = client;
+        if (source) params.source = source;
+        if (from) params.from = from;
+        if (to) params.to = to;
+        if (q) params.q = q;
+
+        const rows = await getOrders(params);
+        if (!active) return;
+
+        setEvents(
+          rows.map((o) => ({
+            id: o._id,
+            title:
+              (o.title || 'Campaign') +
+              (o.sov != null ? ` (${o.sov} SOV)` : ''),
+            allDay: !!o.allDay,
+            start: o.start,
+            end: o.end,
+            extendedProps: {
+              client: o.client,
+              sov: o.sov,
+              notes: o.notes,
+              source: o.source,
+            },
+          }))
+        );
+      } catch (e) {
+        if (active) setErr('Failed to load events');
+        console.error(e);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [bucket, client, source, from, to, q]);
+
+  function onEventClick(info) {
+    const { title, extendedProps, start, end } = info.event;
+    const { client, sov, notes, source } = extendedProps;
+
+    alert(
+      [
+        title,
+        client ? `Client: ${client}` : null,
+        source ? `Source: ${source}` : null,
+        sov != null ? `SOV: ${sov}` : null,
+        start ? `Start: ${start.toLocaleString()}` : null,
+        end ? `End: ${end.toLocaleString()}` : null,
+        notes ? `Notes: ${notes}` : null,
+      ]
+        .filter(Boolean)
+        .join('\n')
+    );
+  }
 
   return (
     <div>
-      <h1>Calendar</h1>
-
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(5, 1fr)', gap:'0.5rem', margin:'0.75rem 0 1rem' }}>
-        <Field label="Bucket">
-          <select value={bucket} onChange={(e)=>setBucket(e.target.value)}>
-            <option value="current">current</option>
-            <option value="upcoming">upcoming</option>
-            <option value="recent">recent (expired last 30d)</option>
-            <option value="expired">expired (all)</option>
-            <option value="">all</option>
-          </select>
-        </Field>
-        <Field label="Source">
-          <select value={source} onChange={(e)=>setSource(e.target.value)}>
-            <option value="">any</option>
-            <option value="manual">manual</option>
-            <option value="flytoget">flytoget</option>
-            <option value="jotform">jotform</option>
-          </select>
-        </Field>
-        <Field label="Client">
-          <input value={client} onChange={(e)=>setClient(e.target.value)} placeholder="e.g. Flytoget" />
-        </Field>
-        <Field label="Search">
-          <input value={q} onChange={(e)=>setQ(e.target.value)} placeholder="title/notes/tags…" />
-        </Field>
-        <div style={{ alignSelf:'end' }}>
-          <button onClick={()=>{ setBucket('current'); setSource(''); setClient(''); setQ(''); }}>Reset</button>
-        </div>
-      </div>
-
-      <OrdersCalendar
-        bucket={bucket || undefined}
-        source={source || undefined}
-        client={client || undefined}
-        q={q || undefined}
-        initialView="timeGridWeek"
-        height="78vh"
-        showToolbar
+      {err && <p style={{ color: 'red' }}>{err}</p>}
+      <FullCalendar
+        plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+        initialView={initialView}
+        headerToolbar={
+          showToolbar
+            ? {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay',
+              }
+            : false
+        }
+        height={height}
+        events={events}
+        eventClick={onEventClick}
       />
     </div>
-  );
-}
-
-function Field({ label, children }) {
-  return (
-    <label style={{ fontSize:12, color:'#555' }}>
-      {label}
-      <div>{children}</div>
-    </label>
   );
 }
