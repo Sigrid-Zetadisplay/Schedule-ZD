@@ -1,67 +1,68 @@
-import React from "react";
-import { NavLink, Outlet, useNavigate, useParams } from "react-router-dom";
-import { CUSTOMER_THEMES } from "./context/CustomerContext";
+import React from 'react';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { useAuth } from './hooks/useAuth';
+
+const theme = {
+  primary: '#0056A4',
+  primaryDark: '#004785',
+  background: '#f4f7fb',
+};
 
 export default function Layout() {
-  const nav = useNavigate();
-  const { customerKey } = useParams();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
-  const customer = CUSTOMER_THEMES[customerKey] || CUSTOMER_THEMES.flytoget;
-  const theme = customer;
-
-  function switchCustomer(nextKey) {
-    // Keep same section if possible (dashboard/orders/tasks/calendar)
-    const currentPath = window.location.pathname.split("/").slice(2).join("/") || "dashboard";
-    nav(`/${nextKey}/${currentPath}`);
+  function handleLogout() {
+    logout();
+    navigate('/', { replace: true });
   }
 
   return (
     <div
-      className="min-h-screen grid grid-cols-[220px_1fr]"
+      className="min-h-screen grid grid-cols-[240px_1fr]"
       style={{ backgroundColor: theme.background }}
     >
       <aside
-        className="border-r border-gray-200 flex flex-col"
-        style={{ backgroundColor: theme.primary, color: "#fff" }}
+        className="flex flex-col border-r border-white/10"
+        style={{
+          background: `linear-gradient(180deg, ${theme.primary} 0%, ${theme.primaryDark} 100%)`,
+        }}
       >
-        <div className="px-4 py-4 border-b border-white/20">
-          <h2 className="text-xl font-semibold text-white">Schedule App</h2>
-          <p className="text-xs text-white/80 mt-1">
-            Active customer: {customer.label}
+        <div className="border-b border-white/15 px-5 py-5">
+          <p className="text-xs uppercase tracking-wide text-white/70">
+            Coop Retail Media
           </p>
+          <h2 className="mt-1 text-xl font-semibold text-white">
+            Schedule App
+          </h2>
         </div>
 
-        <nav className="flex-1 px-3 py-2 space-y-1 text-sm">
-          <NavItem to={`/${customerKey}/dashboard`} label="Dashboard" />
-          <NavItem to={`/${customerKey}/orders`} label="Orders" />
-          <NavItem to={`/${customerKey}/tasks`} label="Tasks" />
-          <NavItem to={`/${customerKey}/calendar`} label="Calendar" />
+        <nav className="flex-1 space-y-1 px-3 py-4">
+          <NavItem to="/dashboard" label="Dashboard" />
+          <NavItem to="/orders" label="Orders" />
+          <NavItem to="/tasks" label="Tasks" />
+          <NavItem to="/calendar" label="Calendar" />
+          <NavItem to="/info" label="Info" />
+          <NavItem to="/reports" label="Reports" />
         </nav>
 
-        <button
-          className="mx-3 mb-3 rounded-md bg-white/15 hover:bg-white/25 px-3 py-2 text-sm"
-          onClick={() => nav("/")}
-        >
-          ← Back to start
-        </button>
+        <div className="border-t border-white/15 px-4 py-4 text-xs text-white/75">
+          <div>Logged in as: {user?.name || user?.email || 'you'}</div>
+          <div className="mt-2 inline-block rounded-full border border-white/20 bg-white/10 px-2 py-1">
+            Internal tool
+          </div>
+
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="mt-4 w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm font-medium text-white transition hover:bg-white/20"
+          >
+            Log out
+          </button>
+        </div>
       </aside>
 
-      <main className="p-4 md:p-6 overflow-y-auto">
-        {/* Top bar */}
-        <div className="flex items-center justify-end mb-4">
-          <select
-            value={customerKey}
-            onChange={(e) => switchCustomer(e.target.value)}
-            className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm"
-          >
-            {Object.values(CUSTOMER_THEMES).map((c) => (
-              <option key={c.key} value={c.key}>
-                {c.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
+      <main className="overflow-y-auto p-6">
         <Outlet />
       </main>
     </div>
@@ -74,15 +75,14 @@ function NavItem({ to, label }) {
       to={to}
       className={({ isActive }) =>
         [
-          "flex items-center rounded-md px-3 py-2 transition-colors",
-          "text-sm",
+          'block rounded-xl px-4 py-3 text-sm font-medium transition',
           isActive
-            ? "bg-white text-slate-900 font-medium shadow-sm"
-            : "text-white/90 hover:bg-white/10 hover:text-white",
-        ].join(" ")
+            ? 'bg-white text-[#0056A4] shadow-sm'
+            : 'text-white/90 hover:bg-white/10 hover:text-white',
+        ].join(' ')
       }
     >
-      <span className="truncate">{label}</span>
+      {label}
     </NavLink>
   );
 }

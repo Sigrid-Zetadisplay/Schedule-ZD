@@ -1,16 +1,40 @@
-const mongoose = require('mongoose');
+// server/models/Task.js
+import mongoose from 'mongoose';
 
-const TaskSchema = new mongoose.Schema(
+const taskSchema = new mongoose.Schema(
   {
-    title: { type: String, required: true },
-    // optional link to an order/campaign
-    orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
-    type: { type: String, enum: ['report', 'followup', 'other'], default: 'other', index: true },
-    status: { type: String, enum: ['open', 'in_progress', 'done'], default: 'open', index: true },
-    due: { type: Date, index: true },
-    notes: String
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    type: {
+      type: String,
+      enum: ['report', 'followup', 'other'],
+      default: 'other',
+    },
+    status: {
+      type: String,
+      enum: ['open', 'in_progress', 'done'],
+      default: 'open',
+    },
+    due: {
+      type: Date,
+      default: null,
+    },
+    notes: {
+      type: String,
+      default: '',
+    },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
   },
   { timestamps: true }
 );
 
-module.exports = mongoose.model('Task', TaskSchema);
+const Task = mongoose.model('Task', taskSchema);
+
+export default Task;

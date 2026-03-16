@@ -129,18 +129,17 @@ export default function OrdersPage() {
         >
           <Input name="title" label="Customer / Product" required />
 
-          {/* Flytoget Client dropdown */}
+          {/* Coop Client dropdown */}
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">
-              Flytoget Client
+              Coop Client
             </label>
             <select
               name="client"
               className="w-full border rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
             >
               <option value="">(none)</option>
-              <option value="Alexander Orning">Alexander Orning</option>
-              <option value="Ingar Jorunnsøn">Ingar Jorunnsøn</option>
+              <option value="Silje Wathle">Silje Wathle</option>
             </select>
           </div>
 
@@ -154,38 +153,40 @@ export default function OrdersPage() {
               className="w-full border rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
             >
               <option value="">(none)</option>
-              <option value="4.16">4.16</option>
-              <option value="8.33">8.33</option>
-              <option value="16.66">16.66</option>
+              <option value="4">4</option>
+              <option value="6">6</option>
+              <option value="8">8</option>
+              <option value="10">10</option>
+              <option value="12">12</option>
             </select>
           </div>
 
-          {/* B2B checkbox */}
+          {/* A-B Test checkbox */}
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
-              name="b2b"
-              id="b2b"
+              name="abTest"
+              id="abTest"
               className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-400"
             />
-            <label htmlFor="b2b" className="text-sm text-gray-700">
-              B2B-campaign
+            <label htmlFor="abTest" className="text-sm text-gray-700">
+              A-B Test
             </label>
           </div>
 
-          {/* Direction dropdown */}
+          {/* Chain dropdown */}
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">
-              Direction
+              Chain
             </label>
             <select
-              name="direction"
-              defaultValue="Begge retning"
+              name="Chain"
+              defaultValue="All"
               className="w-full border rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
             >
-              <option value="Begge retning">Begge retning</option>
-              <option value="Til OSL">Til OSL</option>
-              <option value="Fra OSL">Fra OSL</option>
+              <option value="All">All</option>
+              <option value="Obs">Obs</option>
+              <option value="Extra">Extra</option>
             </select>
           </div>
 
@@ -260,8 +261,8 @@ export default function OrdersPage() {
               <th className="px-4 py-2">Title</th>
               <th className="px-4 py-2">Client</th>
               <th className="px-4 py-2">SOV</th>
-              <th className="px-4 py-2">Direction</th>
-              <th className="px-4 py-2">B2B</th>
+              <th className="px-4 py-2">Chain</th>
+              <th className="px-4 py-2">A-B Test</th>
               <th className="px-4 py-2">Start</th>
               <th className="px-4 py-2">End</th>
               <th className="px-4 py-2 text-right">Actions</th>
@@ -278,10 +279,10 @@ export default function OrdersPage() {
                   <td className="px-4 py-2 align-top">{o.client}</td>
                   <td className="px-4 py-2 align-top">{o.sov}</td>
                   <td className="px-4 py-2 align-top">
-                    {o.direction || ''}
+                    {o.chain || ''}
                   </td>
                   <td className="px-4 py-2 align-top">
-                    {o.b2b ? 'Yes' : 'No'}
+                    {o.abTest ? 'Yes' : 'No'}
                   </td>
                   <td className="px-4 py-2 align-top">
                     {new Date(o.start).toLocaleDateString()}
@@ -359,7 +360,7 @@ export default function OrdersPage() {
                           </p>
                           <p className="mt-1 text-xs text-gray-700">
                             {o.title} – {o.client} – SOV: {o.sov}% –{' '}
-                            {o.direction}
+                            {o.chain}
                             <br />
                             {new Date(o.start).toLocaleDateString()} →{' '}
                             {new Date(o.end).toLocaleDateString()}

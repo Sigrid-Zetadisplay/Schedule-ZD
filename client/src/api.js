@@ -1,36 +1,129 @@
 // client/src/api.js
-import axios from 'axios';
 
-const API = 'http://localhost:4000';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
 
-// ===== Orders =====
+function authHeaders() {
+  const token = localStorage.getItem('token');
 
-export const getSummary = () =>
-  axios.get(`${API}/api/orders/summary`).then(r => r.data);
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+}
 
-export const getOrders = (params = {}) =>
-  axios.get(`${API}/api/orders`, { params }).then(r => r.data);
+async function handleResponse(res, defaultMessage) {
+  const data = await res.json().catch(() => null);
 
-export const createOrder = (payload) =>
-  axios.post(`${API}/api/orders`, payload).then(r => r.data);
+  if (!res.ok) {
+    throw new Error(data?.message || defaultMessage);
+  }
 
-// Used from React Query like: updateOrder(id, patchObject)
-export const updateOrder = (id, payload) =>
-  axios.put(`${API}/api/orders/${id}`, payload).then(r => r.data);
+  return data;
+}
 
-export const deleteOrder = (id) =>
-  axios.delete(`${API}/api/orders/${id}`).then(r => r.data);
+// AUTH
+export async function registerUser(payload) {
+  const res = await fetch(`${API_BASE}/auth/register`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify(payload),
+  });
 
-// ===== Tasks (unchanged) =====
+  return handleResponse(res, 'Failed to register user');
+}
 
-export const getTasks = (params = {}) =>
-  axios.get(`${API}/api/tasks`, { params }).then(r => r.data);
+export async function loginUser(payload) {
+  const res = await fetch(`${API_BASE}/auth/login`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify(payload),
+  });
 
-export const createTask = (payload) =>
-  axios.post(`${API}/api/tasks`, payload).then(r => r.data);
+  return handleResponse(res, 'Failed to login');
+}
 
-export const updateTask = (id, payload) =>
-  axios.put(`${API}/api/tasks/${id}`, payload).then(r => r.data);
+export async function getMe() {
+  const res = await fetch(`${API_BASE}/auth/me`, {
+    headers: authHeaders(),
+  });
 
-export const deleteTask = (id) =>
-  axios.delete(`${API}/api/tasks/${id}`).then(r => r.data);
+  return handleResponse(res, 'Failed to fetch user');
+}
+
+// ORDERS
+export async function getOrders(params = {}) {
+  const query = new URLSearchParams(params).toString();
+  const res = await fetch(`${API_BASE}/orders?${query}`, {
+    headers: authHeaders(),
+  });
+
+  return handleResponse(res, 'Failed to fetch orders');
+}
+
+export async function createOrder(payload) {
+  const res = await fetch(`${API_BASE}/orders`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify(payload),
+  });
+
+  return handleResponse(res, 'Failed to create order');
+}
+
+export async function updateOrder(id, patch) {
+  const res = await fetch(`${API_BASE}/orders/${id}`, {
+    method: 'PATCH',
+    headers: authHeaders(),
+    body: JSON.stringify(patch),
+  });
+
+  return handleResponse(res, 'Failed to update order');
+}
+
+export async function deleteOrder(id) {
+  const res = await fetch(`${API_BASE}/orders/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+
+  return handleResponse(res, 'Failed to delete order');
+}
+
+// TASKS
+export async function getTasks(params = {}) {
+  const query = new URLSearchParams(params).toString();
+  const res = await fetch(`${API_BASE}/tasks?${query}`, {
+    headers: authHeaders(),
+  });
+
+  return handleResponse(res, 'Failed to fetch tasks');
+}
+
+export async function createTask(payload) {
+  const res = await fetch(`${API_BASE}/tasks`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify(payload),
+  });
+
+  return handleResponse(res, 'Failed to create task');
+}
+
+export async function updateTask(id, payload) {
+  const res = await fetch(`${API_BASE}/tasks/${id}`, {
+    method: 'PATCH',
+    headers: authHeaders(),
+    body: JSON.stringify(payload),
+  });
+
+  return handleResponse(res, 'Failed to update task');
+}
+
+export async function deleteTask(id) {
+  const res = await fetch(`${API_BASE}/tasks/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+
+  return handleResponse(res, 'Failed to delete task');
+}
